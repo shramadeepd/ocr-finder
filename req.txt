@@ -1,0 +1,7 @@
+
+fastapi[all]
+tensorflow
+numpy
+Pillow
+scikit-learn
+psycopg2-binary
