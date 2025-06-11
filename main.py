@@ -35,7 +35,9 @@ _model = None
 
 # --- Pydantic Models for API Responses ---
 class SearchResult(BaseModel):
+    ls_id: str
     image_name: str
+    image_base64: str
     similarity_score: float
 
 class SearchResponseData(BaseModel):
@@ -70,7 +72,10 @@ def _create_embeddings_table(conn):
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS image_embeddings (
                 id SERIAL PRIMARY KEY,
+                LS_ID VARCHAR(50) NOT NULL,
+                image_name VARCHAR(255) NOT NULL,
                 image_path VARCHAR(500) UNIQUE NOT NULL,
+                image_base64 TEXT,
                 embedding FLOAT[] NOT NULL
             );
         """)
@@ -81,16 +86,16 @@ def _create_embeddings_table(conn):
         conn.rollback()
         raise # Re-raise to ensure startup fails if table cannot be created
 
-def _insert_embedding(conn, image_path: str, embedding: np.ndarray):
+def _insert_embedding(conn, image_path: str, ls_id: str, image_name: str, image_base64: str, embedding: np.ndarray):
     """Inserts or updates an image embedding in the database."""
     try:
         cursor = conn.cursor()
         embedding_list = embedding.tolist() # Convert NumPy array to Python list
         cursor.execute(
-            """INSERT INTO image_embeddings (image_path, embedding) 
-               VALUES (%s, %s) 
+            """INSERT INTO image_embeddings (LS_ID, image_name, image_path, image_base64, embedding) 
+               VALUES (%s, %s, %s, %s, %s) 
                ON CONFLICT (image_path) DO UPDATE SET embedding = EXCLUDED.embedding;""",
-            (image_path, embedding_list)
+            (ls_id, image_name, image_path, image_base64, embedding_list)
         )
         conn.commit()
         return True
@@ -194,11 +199,7 @@ async def startup_event():
 
 @app.post("/index_images", response_model=IndexResponse, summary="Index images from a folder")
 async def index_images_endpoint():
-    """
-    Indexes all images found in the configured `IMAGE_POOL_DIR`.
-    Calculates embeddings for each image and stores them in the PostgreSQL database.
-    This operation can take a while depending on the number of images and hardware.
-    """
+    import base64  # Needed for encoding image bytes
     conn = _get_db_connection()
     if not conn:
         raise HTTPException(
@@ -224,7 +225,7 @@ async def index_images_endpoint():
     for i in range(0, total_files, BATCH_SIZE):
         batch_img_paths = all_img_files[i:i + BATCH_SIZE]
         batch_preprocessed_tensors = []
-        batch_original_paths = []
+        batch_original_entries = []  # Will store tuples of (img_path, img_base64)
 
         # Load and preprocess images for the current batch
         for img_path in batch_img_paths:
@@ -232,13 +233,15 @@ async def index_images_endpoint():
                 with open(img_path, "rb") as f:
                     img_bytes = f.read()
                 preprocessed_tensor = _preprocess_image_bytes(img_bytes)
+                # Encode the image bytes into base64 string
+                img_base64 = base64.b64encode(img_bytes).decode('utf-8')
                 batch_preprocessed_tensors.append(preprocessed_tensor)
-                batch_original_paths.append(img_path)
+                batch_original_entries.append((img_path, img_base64))
             except (UnidentifiedImageError, Exception) as e:
                 print(f"Skipping {os.path.basename(img_path)} due to error during preprocessing: {e}")
 
         if not batch_preprocessed_tensors:
-            continue # Skip to next batch if all images in this batch failed
+            continue  # Skip to next batch if all images in this batch failed
 
         # Stack the preprocessed tensors into a single NumPy array for batch prediction
         batched_input = np.vstack(batch_preprocessed_tensors)
@@ -246,20 +249,19 @@ async def index_images_endpoint():
         # Get features for the entire batch
         features_batch = _load_model().predict(batched_input, verbose=0)
 
-        # Insert each image's features into the database
+        # Insert each image's features into the database with the updated structure
         for j, features in enumerate(features_batch):
-            img_path = batch_original_paths[j]
-            if _insert_embedding(conn, img_path, features.flatten()):
+            img_path, img_base64 = batch_original_entries[j]
+            image_name = os.path.basename(img_path)  # Use only the file name
+            # Use fixed LS_ID "200" and provided image_base64
+            if _insert_embedding(conn, img_path, "200", image_name, img_base64, features.flatten()):
                 processed_count += 1
-                # print(f"  Indexed {os.path.basename(img_path)} ({processed_count}/{total_files})")
-            # else: print(f"  Skipped (already indexed): {os.path.basename(img_path)}") # Can be noisy
 
     conn.close()
     return IndexResponse(
         indexed_count=processed_count,
         message=f"Indexing complete. {processed_count} images indexed/updated from '{IMAGE_POOL_DIR}'."
     )
-
 
 @app.post("/search_image", response_model=SearchResponse, summary="Search for similar images")
 async def search_image_endpoint(
@@ -269,7 +271,8 @@ async def search_image_endpoint(
 ):
     """
     Takes an input image either as an UploadFile (multipart/form-data) or as a base64 string in JSON,
-    extracts its embedding, and finds the most similar images in the database based on a similarity threshold.
+    extracts its embedding, queries the DB for all image embeddings, and finds the most similar images.
+    The response returns the image's LS_ID and base64 string along with the similarity score.
     """
     conn = _get_db_connection()
     if not conn:
@@ -298,27 +301,44 @@ async def search_image_endpoint(
                 detail="No image provided. Please upload a file or provide a base64-encoded image."
             )
         
-        # Preprocess query image
+        # Preprocess query image and extract its features
         query_img_preprocessed = _preprocess_image_bytes(query_image_bytes)
-        
-        # Extract features for query image
         query_features = _extract_features_from_preprocessed(query_img_preprocessed)
-        query_features = query_features.reshape(1, -1)  # Reshape for cosine_similarity
+        query_features = query_features.reshape(1, -1)  # reshape for cosine_similarity calculation
 
-        # Fetch all indexed embeddings from the database
-        indexed_image_paths, indexed_features = _get_all_embeddings_from_db(conn)
+        # Query the database for all embeddings
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT LS_ID, image_name, image_base64, embedding
+            FROM image_embeddings;
+        """)
+        db_results = cursor.fetchall()
         
-        if not indexed_features.size:
-            conn.close()
+        if not db_results:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No image embeddings found in the database. Please index images first."
             )
 
-        # Calculate cosine similarity
+        # Build lists of details and embeddings
+        indexed_details = []
+        indexed_features = []
+        for row in db_results:
+            # row: (LS_ID, image_name, image_base64, embedding)
+            ls_id, img_name, img_b64, emb = row
+            indexed_details.append({
+                "LS_ID": ls_id,
+                "image_name": img_name,
+                "image_base64": img_b64
+            })
+            indexed_features.append(np.array(emb))
+        
+        indexed_features = np.array(indexed_features)
+        
+        # Calculate cosine similarity between query image and each embedding
         similarities = cosine_similarity(query_features, indexed_features)[0]
 
-        # Sort and get top matches
+        # Sort indices by similarity score in descending order
         sorted_indices = np.argsort(similarities)[::-1]
 
         top_matches_list = []
@@ -326,10 +346,13 @@ async def search_image_endpoint(
 
         for i, idx in enumerate(sorted_indices[:top_n]):
             score = float(similarities[idx])
-            img_path = indexed_image_paths[idx]
-            img_name = os.path.basename(img_path)
-            
-            current_match = SearchResult(image_name=img_name, similarity_score=score)
+            details = indexed_details[idx]
+            current_match = SearchResult(
+                ls_id=details["LS_ID"],
+                image_name=details["image_name"],
+                image_base64=details["image_base64"],
+                similarity_score=score
+            )
             top_matches_list.append(current_match)
 
             if i == 0 and score >= SIMILARITY_THRESHOLD:
@@ -343,10 +366,10 @@ async def search_image_endpoint(
         return SearchResponse(
             success=True,
             data=SearchResponseData(
-            query_image_name=query_image_name,
-            most_similar_image=most_similar_result,
-            top_matches=top_matches_list,
-            message=message
+                query_image_name=query_image_name,
+                most_similar_image=most_similar_result,
+                top_matches=top_matches_list,
+                message=message
             )
         )
 
@@ -364,6 +387,21 @@ async def search_image_endpoint(
     finally:
         if conn:
             conn.close()
+
+    # except UnidentifiedImageError:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Invalid image file format. Please upload a valid image (e.g., JPG, PNG)."
+    #     )
+    # except Exception as e:
+    #     print(f"Error during search: {e}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail=f"An unexpected error occurred during search: {e}"
+    #     )
+    # finally:
+    #     if conn:
+    #         conn.close()
 
 # --- Main Execution Block ---
 if __name__ == "__main__":

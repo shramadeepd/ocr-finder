@@ -1,0 +1,36 @@
+"img
+",ImageID,NOCAP_MODELID,SONIC_MODELID,MODEL_FILE_NAME,type,last updated,label_studio_id,body(mandatory),phrase,case,numeric,math,minLength,maxLength,comment,accuracy,,dataset,download_link,download_script,,,,,site_name
+,201_1,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,242(2 variant),string,FALSE,TRUE,0,FALSE,5,5,nil,,,,,,,,,,ncs
+,201_2,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,243,string/ int,FALSE,TRUE,1,,6,6,,,,https://github.com/shramadeepd/captcha/blob/main/enzoSolution/enzoSolution_images.zip,https://www.enzosolution.ca/enzoapp/vendors/securimage/securimage_show.php,https://github.com/shramadeepd/captcha/blob/main/enzoSolution/get_images.py,,,,,enzoSolution
+,,,pending,,ocr,,245,,,,,,,,,,,,,,,,,,
+,201_3,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,246,,,,,,,,,,,,,,,,,,bdris
+,201_4,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,247(has 2 variants),,,,,,,,,,,,https://interception1.web.de/logininterceptionfrontend/?interceptiontype=VerifyLogin&requestSecurityToken=c371509b-b69b-43c2-9ca3-f86ccba1ec19,,,,,,web.de
+,,,pending,,ocr,,248,,,,,,,,,,,,,,,,,,amazon
+,201_5,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,255(has2 variant),,,,,,,,,,,,,,,,,,france visa
+,,,pending,,ocr,,253,,,,,,,,,,,,caixa.gov.br,,,,,,caixa 
+,,,pending,,ocr,,216,,,,,,,,,,,,,,,,,,xtremetop
+,201_6,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,204,,,,,,,,,,,,,,,,,,
+,,,pending,,ocr,,203,,,,,,,,,,,,,,,,,,
+,,,pending,,ocr,,195,string/ int,FALSE,TRUE,max 3,FALSE,6,6,capital 2/3,,,,,,,,,,
+,201_7,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,192,string/ int,FALSE,TRUE,max 4,FALSE,6,6,capital 2/3,,,,,,,,,,catch.au
+,201_8,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,265,int,FALSE,FALSE,5,FALSE,5,5,,,,,https://blsitalyvisa.com/senegal/account/login,,,,,,bls
+,,,pending,,ocr,,264,string/ int,FALSE,TRUE,2,FALSE,5,5,,,,,https://vk.com/captcha.php?sid=574374282145&source=api_auth_validate_account_ip&app_id=7913379&device_id=ijumkqmhf7Pelqi1GOWMH&resized=1&s=1&resized=1&width=400&first=1,,,,,,VK
+,201_9,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,267,string/ int,FALSE,TRUE,max 4,FALSE,6,6,all capital ,,,,https://crovisa.mvep.hr/VisaRequestFormPage1.aspx,,,,,,croatia
+,202_10,module_nocap_202,module_m002,ocr_multi_m002,ocr,27/1/25,269,string/ int,FALSE,TRUE,2,FALSE,4,4,capital and #@=+,,,,https://secure.e-konsulat.gov.pl/placowki/202/wiza-krajowa/wizyty/weryfikacja-obrazkowa,,,,,,konsulat.gov.pl
+,202_11,module_nocap_202,module_m002,ocr_multi_m002,ocr,27/1/25,273,int,FALSE,FALSE,6,FALSE,6,6,nil,,,,https://evisa.gov.vn/login,,,,,,vietnam
+,202_12,module_nocap_202,module_m002,ocr_multi_m002,ocr,27/1/25,274( has many types inside ),string/ int,FALSE,TRUE,max 3,FALSE,6,5,capital 2/4,,,,https://evisa.gov.mw/Account/Login,,,,,,malawi
+,202_13,module_nocap_202,module_m002,ocr_multi_m002,ocr,27/1/25,275,string/ int,FALSE,TRUE,max 3,FALSE,6,5,capital 2/3,,,,https://evisa.gov.az/en/check-status,,,,,,Azerbaijan
+,201_14,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,261,string/ int,FALSE,TRUE,max 3,FALSE,5,5,nil,,,,https://www.evisa.gov.mz/login,,,,,,Mozambique
+,202_15,module_nocap_202,module_m002,ocr_multi_m002,ocr,27/1/25,276,string/ int,FALSE,TRUE,2,FALSE,5,5,nil,,,,,,,,,,bahrain
+,202_16,module_nocap_202,module_m002,ocr_multi_m002,ocr,27/1/25,271,string/ int,FALSE,TRUE,max3,FALSE,5,5,nil,,,,,,,,,,sbi
+,202_17,module_nocap_202,module_m002,ocr_multi_m002,ocr,27/1/25,272,string/ int,FALSE,TRUE,2,FALSE,4,4,capital 1/2,,,,,,,,,,sbi
+,202_18,module_nocap_202,module_m002,ocr_multi_m002,ocr,27/1/25,278,string/ int,FALSE,TRUE,1,FALSE,7,7,nill,,,,https://www.thaievisa.go.th/signin,,,,,,thaievisa
+,202_19,module_nocap_202,module_m002,ocr_multi_m002,ocr,27/1/25,279,,,,,,,,,,,,https://evisa.rop.gov.om/en/loginportal,,,,,,oman
+,,mtcaptcha,mtCaptcha,mt_captcha,ocr,,202,,,,,,,,,,,,,,,,,,mtCap
+,201_21,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,259,,,,,,,,,,,,,,,,,,
+,201_22,module_nocap_201,module_m001,ocr_multi_m001,ocr,28/4/25,258,,,,,,,,,,,,,,,,,,
+,201_23,module_nocap_201,module_m001,ocr_multi_m001,ocr/bls,28/4/25,292,,,,,,,,,,,,,,,,,,
+,,,,,ocr,,277,Same 261,,,,,,,,,,,https://evisa.gov.mz/login,,,,,,evisa
+,,,,,ocr,,262,string/ int,FALSE,TRUE,max 3,FALSE,7,7,,,,,https://evisa.mae.ro/DefaultCaptcha/Generate,,,,,,evissa romania
+,,,pending,,ocr,,306,,,,,,,,,,,,,,,,,,
+,,,pending,,ocr,,311,,,,,,,,,,,,,,,,,,
