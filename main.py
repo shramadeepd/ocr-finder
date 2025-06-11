@@ -38,11 +38,15 @@ class SearchResult(BaseModel):
     image_name: str
     similarity_score: float
 
-class SearchResponse(BaseModel):
+class SearchResponseData(BaseModel):
     query_image_name: str
     most_similar_image: Optional[SearchResult] = None
-    top_matches: List[SearchResult] = [] # List of top N results (even if below threshold)
+    top_matches: List[SearchResult] = []  # List of top N results (even if below threshold)
     message: str
+
+class SearchResponse(BaseModel):
+    success: bool = True
+    data: SearchResponseData
 
 class IndexResponse(BaseModel):
     indexed_count: int
@@ -337,10 +341,13 @@ async def search_image_endpoint(
             message = f"No image found above similarity threshold {SIMILARITY_THRESHOLD:.2f}. Closest match had score {top_matches_list[0].similarity_score:.4f}."
 
         return SearchResponse(
+            success=True,
+            data=SearchResponseData(
             query_image_name=query_image_name,
             most_similar_image=most_similar_result,
             top_matches=top_matches_list,
             message=message
+            )
         )
 
     except UnidentifiedImageError:
